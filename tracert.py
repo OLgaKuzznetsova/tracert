@@ -1,5 +1,7 @@
 import os
 import re
+import socket
+
 from whois import Whois
 
 
@@ -30,7 +32,11 @@ class Tracert:
 
     def get_data_from_whois(self):
         for i in range(len(self.all_ip)):
-            if self.all_ip[i] == "*":
+            if self.all_ip[i] == self.get_local_ip():
+                self.print_result(i+1, self.all_ip[i], "local", "", "")
+            elif self.is_grey_ip(self.all_ip[i]):
+                self.print_result(i+1, self.all_ip[i], "", "", "")
+            elif self.all_ip[i] == "*":
                 self.print_result(i+1, "*", "", "", "")
             else:
                 name_AS, country, netname = Whois(self.all_ip[i]).get_result()
@@ -56,3 +62,14 @@ class Tracert:
             print(f"{number}. {ip}\r\n"
                   f"{netname} {as_name} {country}\r\n"
                   f"\r\n")
+
+    @staticmethod
+    def is_grey_ip(ip):
+        return ip.startswith('192.168.') \
+               or ip.startswith('10.') \
+               or (ip.startswith('172.')
+                   and 15 < int(ip.split('.')[1]) < 32)
+
+    @staticmethod
+    def get_local_ip():
+        return socket.gethostbyname(socket.gethostname())

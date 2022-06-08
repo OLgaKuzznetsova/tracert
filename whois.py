@@ -1,41 +1,37 @@
 import re
-import socket
+from urllib.request import urlopen, Request
 
 
 class Whois:
-    _HOST = "whois.ripe.net"
-    _PORT = 43
-
     def __init__(self, ip):
         self.ip = ip
-        self.buf = ""
-        self.county_regex = re.compile(r"country:[ ]*(\w*)\n")
-        self.name_AS_regex = re.compile(r"(?:origin|OriginAS):[ ]*(.*)\n")
-        self.net_name_regex = re.compile(r"[nN]et[Nn]ame:[ ]*(.*)\n")
+        self.data = ""
+        self.county_regex = re.compile(r"[Cc]ountry: *(\w*)\r\n")
+        self.name_AS_regex = re.compile(r"(?:origin|OriginAS):[ ]*(.*)\r\n")
+        self.net_name_regex = re.compile(r"[nN]et[Nn]ame:[ ]*(.*)\r\n")
         self.name_AS = ""
         self.country = ""
         self.netname = ""
 
     def create(self):
-        s = socket.create_connection((self._HOST, self._PORT))
-        s.sendall(f'{self.ip}\r\n'.encode())
-        while True:
-            buf = s.recv(1024).decode("utf-8")
-            self.buf += buf
-            if len(buf) == 0:
-                break
+        try:
+            url = f"https://whois.ru/{self.ip}"
+            req = Request(url, headers={'User-Agent': 'Mozilla/5.0'})
+            self.data = urlopen(req).read().decode()
+        except:
+            pass
 
     def parse(self):
         try:
-            self.country = self.county_regex.findall(self.buf)[0]
+            self.country = self.county_regex.findall(self.data)[0]
         except IndexError:
             self.country = ""
         try:
-            self.netname = self.net_name_regex.findall(self.buf)[0]
+            self.netname = self.net_name_regex.findall(self.data)[0]
         except IndexError:
             self.netname = ""
         try:
-            self.name_AS = self.name_AS_regex.findall(self.buf)[0]
+            self.name_AS = self.name_AS_regex.findall(self.data)[0]
         except IndexError:
             self.name_AS = ""
 
